@@ -1,13 +1,12 @@
 # maxagent
 
-Run **1-4 Codex or Claude panes in one terminal** that survive closing your SSH
-connection. One command opens a [zellij](https://zellij.dev) session laid out as
-a grid of coding-agent panes; detach, reconnect later, and the session is still
-there.
+Run **1-4 Codex or Claude panes in one terminal** with persistent zellij
+sessions. This is useful on a Linux dev server: start multiple agent panes,
+detach, close SSH, reconnect later, and attach to the same running workspace.
 
 ```bash
 maxcodex          # 2x2 grid of 4 Codex panes
-maxcodex 2        # two Codex panes, side by side
+maxcodex 2        # two Codex panes
 maxcodex work     # named Codex workspace
 maxclaude         # Claude compatibility command
 ```
@@ -18,24 +17,21 @@ maxclaude         # Claude compatibility command
 ├───────────────┼───────────────┤
 │   agent #3    │   agent #4    │
 └───────────────┴───────────────┘
-        maxagent  (session: codex4)
+        maxagent
 ```
 
 ## Install
 
-From a clone:
+Current Codex/modular branch:
 
 ```bash
-git clone https://github.com/Gadgetguycj/maxclaude.git
-cd maxclaude
-./install.sh --provider codex
+git clone --branch codex-maxagent https://github.com/DeluxeRaph/maxclaude.git maxagent
+cd maxagent
+./install.sh --provider codex --workdir "$HOME/Projects"
 ```
 
-Or one line from GitHub:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/Gadgetguycj/maxclaude/main/install.sh | bash
-```
+The original upstream repo is still named `maxclaude`. Until this branch is
+merged upstream, install from the fork/branch above.
 
 The installer:
 
@@ -44,14 +40,14 @@ The installer:
 - writes provider profiles under `~/.config/maxagent/profiles`;
 - installs neutral `agent{1,2,3,4}` layouts plus legacy `cc{1,2,3,4}` layouts;
 - installs per-user systemd services on Linux when available;
-- adds `~/.local/bin` to your `PATH` if needed.
+- adds `~/.local/bin` to your shell startup file if needed.
 
 ### Non-Interactive Install
 
 ```bash
-./install.sh --yes --provider codex --workdir "$HOME/code"
-./install.sh --yes --provider codex --codex-sandbox workspace-write
-./install.sh --yes --provider claude --yolo
+./install.sh --yes --provider codex --workdir "$HOME/Projects"
+./install.sh --yes --provider codex --workdir "$HOME/Projects" --codex-sandbox workspace-write
+./install.sh --yes --provider claude --workdir "$HOME/Projects" --yolo
 ```
 
 | flag | meaning |
@@ -73,31 +69,45 @@ bypass is only used when explicitly requested.
 
 ## Requirements
 
-- **Codex CLI** (`codex` on your `PATH`) for Codex panes.
-- **Claude Code** (`claude` on your `PATH`) for Claude panes.
-- **zellij** - installed automatically if missing.
-- **Linux with `systemctl --user`** for the strongest "survives SSH disconnect"
-  behavior via systemd linger. macOS and non-systemd hosts use zellij's own
-  background server.
+- **Codex CLI** for Codex panes. The installer checks normal `PATH`, a login
+  shell PATH, and common nvm locations, then writes the resolved command into
+  `~/.config/maxagent/profiles/codex.sh`.
+- **Claude Code** for Claude panes. Claude is optional if you only use Codex.
+- **zellij**. Installed automatically if missing.
+- **Linux with `systemctl --user`** for the strongest SSH persistence via
+  systemd linger. macOS and non-systemd hosts use zellij's background server.
 
 ## Usage
 
-| command | what it does |
-|---------|--------------|
-| `maxcodex` | open/attach the 4-pane Codex grid |
-| `maxcodex 1` \| `2` \| `3` \| `4` | open/attach an N-pane Codex session |
-| `maxcodex <name>` | open/attach a named Codex workspace |
-| `maxcodex <name> N` | named Codex workspace with N panes |
-| `maxagent codex <name> N` | explicit provider form |
-| `maxagent claude <name> N` | explicit Claude provider form |
-| `maxclaude` | legacy Claude command; keeps `max1`-`max4` session names |
-| `maxagent ls` | list live sessions, numbered, with status flags |
-| `maxagent attach <n\|name>` | attach session #n from `ls`, or by name |
-| `maxagent close <n\|name>` | close session #n from `ls`, or by name |
-| `maxagent close all` | close every session |
-| `maxagent prune` | garbage-collect dead/exited session ghosts |
+Start Codex:
 
-Inside a session:
+```bash
+maxcodex          # 4 panes
+maxcodex 1        # 1 pane
+maxcodex 2        # 2 panes
+maxcodex work     # named workspace
+maxcodex oss 2    # named workspace with 2 panes
+```
+
+Start Claude:
+
+```bash
+maxclaude         # legacy Claude command
+maxagent claude 2 # explicit provider form
+```
+
+Manage sessions:
+
+```bash
+maxagent ls
+maxagent attach 1
+maxagent attach codex-work
+maxagent close 1
+maxagent close all
+maxagent prune
+```
+
+Inside zellij:
 
 - **Detach**: `Ctrl-o` then `d`
 - **Move between panes**: `Alt`+arrow keys
@@ -118,8 +128,7 @@ maxagent claude 2   # explicit Claude provider
 ```
 
 Codex model selection comes from Codex itself: your Codex defaults, your Codex
-config, or flags passed through the generated profile. The installer writes the
-Codex profile here:
+config, or flags passed through the generated profile:
 
 ```bash
 ~/.config/maxagent/profiles/codex.sh
@@ -128,13 +137,21 @@ Codex profile here:
 For example, add a model flag to the final `exec` line:
 
 ```bash
-exec codex --cd "/root/Projects" --model gpt-5.4 "$@"
+exec codex --cd "$HOME/Projects" --model gpt-5.4 "$@"
 ```
 
 Or use a Codex config profile:
 
 ```bash
-exec codex --cd "/root/Projects" --profile my-profile "$@"
+exec codex --cd "$HOME/Projects" --profile my-profile "$@"
+```
+
+If the installer generated an absolute Codex path or an `export PATH=...` line
+for nvm, keep those parts and add flags after the `--cd` argument:
+
+```bash
+export PATH='/root/.nvm/versions/node/v24.16.0/bin':$PATH
+exec '/root/.nvm/versions/node/v24.16.0/bin/codex' --cd '/root/Projects' --model gpt-5.4 "$@"
 ```
 
 Claude panes work the same way: `maxclaude` launches `claude`, and Claude Code
@@ -151,8 +168,8 @@ after changing a provider profile.
 
 - `~/.local/bin/maxagent` owns zellij session management.
 - `~/.local/bin/maxcodex` and `~/.local/bin/maxclaude` are provider wrappers.
-- `~/.config/maxagent/profiles/codex.sh` execs `codex --cd <workdir>`.
-- `~/.config/maxagent/profiles/claude.sh` execs `claude`.
+- `~/.config/maxagent/profiles/codex.sh` launches Codex.
+- `~/.config/maxagent/profiles/claude.sh` launches Claude.
 - `~/.config/maxagent/sessions/*.env` records provider and pane count per
   zellij session.
 - `~/.local/bin/maxagent-pane` runs inside each pane and dispatches to the
