@@ -65,6 +65,18 @@ shell_quote(){
   printf "'%s'" "$(printf '%s' "$s" | sed "s/'/'\\\\''/g")"
 }
 
+find_exe(){
+  local name="$1" found=""
+  found="$(command -v "$name" 2>/dev/null || true)"
+  if [ -z "$found" ]; then
+    found="$(bash -lc "command -v $name" 2>/dev/null || true)"
+  fi
+  if [ -z "$found" ] && [ "$name" = "codex" ]; then
+    found="$(find "$HOME/.nvm/versions/node" -maxdepth 4 -type f -name codex -perm -111 2>/dev/null | sort -Vr | head -1 || true)"
+  fi
+  printf '%s\n' "$found"
+}
+
 while [ $# -gt 0 ]; do
   case "$1" in
     --provider) shift; DEFAULT_PROVIDER="${1:?--provider needs codex or claude}" ;;
@@ -164,10 +176,12 @@ else
   ok "installed zellij ($("$BIN_DIR/zellij" --version 2>/dev/null || echo '?'))"
 fi
 
-if ! command -v codex >/dev/null 2>&1; then
+CODEX_BIN="$(find_exe codex)"
+CLAUDE_BIN="$(find_exe claude)"
+if [ -z "$CODEX_BIN" ]; then
   warn "Codex ('codex') is not on your PATH yet. Install or log in before starting Codex panes."
 fi
-if ! command -v claude >/dev/null 2>&1; then
+if [ -z "$CLAUDE_BIN" ]; then
   warn "Claude Code ('claude') is not on your PATH yet. Claude panes will launch once it is available."
 fi
 
@@ -204,6 +218,13 @@ ok "layouts   -> $LAYOUT_DIR/agent{1,2,3,4}.kdl (+ legacy cc{1,2,3,4})"
 
 mkdir -p "$PROFILE_DIR" "$SESSION_DIR"
 workdir_q="$(shell_quote "$WORKDIR")"
+codex_cmd="codex"
+codex_path_line="# codex found on PATH"
+if [ -n "$CODEX_BIN" ]; then
+  codex_cmd="$(shell_quote "$CODEX_BIN")"
+  codex_dir="$(dirname "$CODEX_BIN")"
+  codex_path_line="export PATH=$(shell_quote "$codex_dir"):\$PATH"
+fi
 codex_extra=""
 [ -n "$CODEX_PROFILE" ] && codex_extra="$codex_extra --profile $(shell_quote "$CODEX_PROFILE")"
 [ -n "$CODEX_SANDBOX" ] && codex_extra="$codex_extra --sandbox $(shell_quote "$CODEX_SANDBOX")"
@@ -211,13 +232,18 @@ codex_extra=""
 [ -n "$CODEX_DANGEROUS" ] && codex_extra="$codex_extra --dangerously-bypass-approvals-and-sandbox"
 cat > "$PROFILE_DIR/codex.sh" <<EOF
 #!/usr/bin/env bash
+$codex_path_line
 cd $workdir_q 2>/dev/null || cd "\$HOME" || true
-exec codex --cd $workdir_q$codex_extra "\$@"
+exec $codex_cmd --cd $workdir_q$codex_extra "\$@"
 EOF
 chmod 0755 "$PROFILE_DIR/codex.sh"
 
 claude_env="# normal permission prompts"
 claude_flags=""
+claude_cmd="claude"
+if [ -n "$CLAUDE_BIN" ]; then
+  claude_cmd="$(shell_quote "$CLAUDE_BIN")"
+fi
 if [ -n "$CLAUDE_YOLO" ]; then
   claude_env="export IS_SANDBOX=1"
   claude_flags=" --dangerously-skip-permissions"
@@ -226,7 +252,7 @@ cat > "$PROFILE_DIR/claude.sh" <<EOF
 #!/usr/bin/env bash
 $claude_env
 cd $workdir_q 2>/dev/null || cd "\$HOME" || true
-exec claude$claude_flags "\$@"
+exec $claude_cmd$claude_flags "\$@"
 EOF
 chmod 0755 "$PROFILE_DIR/claude.sh"
 ok "profiles  -> $PROFILE_DIR/{codex,claude}.sh"
