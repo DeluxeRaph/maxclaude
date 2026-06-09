@@ -9,11 +9,11 @@ layout {
             plugin location="compact-bar"
         }
     }
-    pane_template name="cc" {
+    pane_template name="agent" {
         command "bash"
         args "-lc" "exec $HOME/.local/bin/maxagent-pane"
     }
     tab name="agent" focus=true {
-        cc
+        agent
     }
 }

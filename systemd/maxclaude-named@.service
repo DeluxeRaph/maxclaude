@@ -15,8 +15,8 @@ Environment=COLORTERM=truecolor
 # (~/.config/maxclaude/<name>.panes) written by the maxclaude command; missing or
 # invalid -> 4 panes. Idempotent: if the session exists this is a no-op.
 # %h = the user's home directory.
-ExecStart=%h/.local/bin/maxclaude-svc start %I
-ExecStop=%h/.local/bin/maxclaude-svc stop %I
+ExecStart=%h/.local/bin/maxagent-svc start %I
+ExecStop=%h/.local/bin/maxagent-svc stop %I
 
 # No [Install] section, by design: this unit is NOT boot-persistent. maxclaude
 # starts it with `systemctl --user start` (linger keeps it alive across SSH

@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# maxagent-svc start|stop <session>
+set -euo pipefail
+
+ZJ="${MAXAGENT_ZELLIJ:-${MAXCLAUDE_ZELLIJ:-$HOME/.local/bin/zellij}}"
+[ -x "$ZJ" ] || ZJ="$(command -v zellij 2>/dev/null || true)"
+[ -n "$ZJ" ] || { echo "maxagent-svc: zellij not found" >&2; exit 127; }
+action="${1:?usage: maxagent-svc start|stop <session>}"
+name="${2:?usage: maxagent-svc start|stop <session>}"
+cfg="${MAXAGENT_CONFIG_HOME:-${XDG_CONFIG_HOME:-$HOME/.config}/maxagent}"
+meta="$cfg/sessions/${name}.env"
+panes=4
+
+if [ -r "$meta" ]; then
+  panes="$(awk -F= '$1 == "MAXAGENT_PANES" {print $2; exit}' "$meta")"
+fi
+case "$panes" in 1|2|3|4) ;; *) panes=4 ;; esac
+
+case "$action" in
+  start) exec "$ZJ" --layout "agent${panes}" attach --create-background "$name" ;;
+  stop) exec "$ZJ" delete-session --force "$name" ;;
+  *) echo "unknown action: $action (want start|stop)" >&2; exit 2 ;;
+esac

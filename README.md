@@ -1,135 +1,133 @@
-# maxclaude
+# maxagent
 
-Run **1–4 Claude Code panes in one terminal** that survive closing your SSH
+Run **1-4 Codex or Claude panes in one terminal** that survive closing your SSH
 connection. One command opens a [zellij](https://zellij.dev) session laid out as
-a grid of Claude Code panes; close your laptop, reconnect later, and your
-sessions are still there.
+a grid of coding-agent panes; detach, reconnect later, and the session is still
+there.
 
-```
-maxclaude          2×2 grid of 4 Claude panes
-maxclaude 2        two panes, side by side
-maxclaude work     a named workspace you can re-open any time
+```bash
+maxcodex          # 2x2 grid of 4 Codex panes
+maxcodex 2        # two Codex panes, side by side
+maxcodex work     # named Codex workspace
+maxclaude         # Claude compatibility command
 ```
 
 ```
 ┌───────────────┬───────────────┐
-│   claude #1   │   claude #2   │
+│   agent #1    │   agent #2    │
 ├───────────────┼───────────────┤
-│   claude #3   │   claude #4   │
+│   agent #3    │   agent #4    │
 └───────────────┴───────────────┘
-        maxclaude  (session: max4)
+        maxagent  (session: codex4)
 ```
 
 ## Install
 
-One line, straight from GitHub:
+From a clone:
+
+```bash
+git clone https://github.com/Gadgetguycj/maxclaude.git
+cd maxclaude
+./install.sh --provider codex
+```
+
+Or one line from GitHub:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Gadgetguycj/maxclaude/main/install.sh | bash
 ```
 
-Or clone and run it:
-
-```bash
-git clone https://github.com/Gadgetguycj/maxclaude.git
-cd maxclaude
-./install.sh
-```
-
 The installer:
 
-- **installs zellij for you** if you don't already have it (downloads the
-  prebuilt binary into `~/.local/bin` — no package manager needed);
-- asks where each pane should open and **whether to enable
-  `--dangerously-skip-permissions`** (off by default);
-- installs the `maxclaude` command, the four layouts, and (on Linux) the
-  per-user systemd services that keep sessions alive after you disconnect;
-- adds `~/.local/bin` to your `PATH` if it isn't already.
+- installs `maxagent`, `maxcodex`, and the compatibility `maxclaude` command;
+- installs zellij into `~/.local/bin` if zellij is missing;
+- writes provider profiles under `~/.config/maxagent/profiles`;
+- installs neutral `agent{1,2,3,4}` layouts plus legacy `cc{1,2,3,4}` layouts;
+- installs per-user systemd services on Linux when available;
+- adds `~/.local/bin` to your `PATH` if needed.
 
-Then open a new shell (or `source ~/.bashrc`) and run `maxclaude`.
-
-### Non-interactive / scripted install
+### Non-Interactive Install
 
 ```bash
-./install.sh --yes --safe --workdir "$HOME/code"      # normal permission prompts
-./install.sh --yes --yolo                              # --dangerously-skip-permissions
+./install.sh --yes --provider codex --workdir "$HOME/code"
+./install.sh --yes --provider codex --codex-sandbox workspace-write
+./install.sh --yes --provider claude --yolo
 ```
 
 | flag | meaning |
 |------|---------|
+| `--provider codex\|claude` | default provider for `maxagent` |
+| `--workdir DIR` | directory each pane opens in |
+| `--codex-profile NAME` | pass `--profile NAME` to Codex |
+| `--codex-sandbox MODE` | pass `--sandbox MODE` to Codex |
+| `--codex-approval POLICY` | pass `--ask-for-approval POLICY` to Codex |
+| `--codex-dangerous-bypass` | pass Codex's dangerous approval/sandbox bypass flag |
 | `--yolo`, `--skip-permissions` | start Claude with `--dangerously-skip-permissions` |
-| `--safe` | start Claude with normal permission prompts (default) |
-| `--workdir DIR` | directory each pane opens in (default: `$HOME`) |
-| `--zellij-version vX.Y.Z` | zellij release to fetch when it's not installed (default: `v0.44.3`) |
-| `--no-systemd` | skip the systemd units; rely on zellij's own persistence |
+| `--safe` | start Claude with normal permission prompts |
+| `--zellij-version vX.Y.Z` | zellij release to fetch when missing |
+| `--no-systemd` | skip systemd units; rely on zellij's own persistence |
 | `-y`, `--yes` | take defaults/flags without prompting |
+
+Codex defaults are intentionally safe and interactive. The dangerous Codex
+bypass is only used when explicitly requested.
 
 ## Requirements
 
-- **[Claude Code](https://claude.com/claude-code)** (`claude` on your `PATH`).
-- **zellij** — installed automatically if missing.
-- **Linux with `systemctl --user`** for the "survives SSH disconnect" behavior
-  (via systemd linger). On macOS or systems without systemd, maxclaude falls
-  back to zellij's own background server, which keeps a detached session alive
-  while you reconnect from the same machine.
+- **Codex CLI** (`codex` on your `PATH`) for Codex panes.
+- **Claude Code** (`claude` on your `PATH`) for Claude panes.
+- **zellij** - installed automatically if missing.
+- **Linux with `systemctl --user`** for the strongest "survives SSH disconnect"
+  behavior via systemd linger. macOS and non-systemd hosts use zellij's own
+  background server.
 
 ## Usage
 
 | command | what it does |
 |---------|--------------|
-| `maxclaude` | open/attach the 4-pane grid (`= maxclaude 4`) |
-| `maxclaude 1` \| `2` \| `3` \| `4` | open/attach an N-pane numbered session |
-| `maxclaude <name>` | open/attach a named workspace (4 panes) |
-| `maxclaude <name> N` | named workspace with N panes |
-| `maxclaude ls` | list live sessions, numbered, with status flags |
-| `maxclaude attach <n\|name>` | attach session #n (from `ls`) or by name |
-| `maxclaude close <n\|name>` | close session #n or by name |
-| `maxclaude close` | close the **current** session (run from inside it) |
-| `maxclaude close all` | close every session |
-| `maxclaude prune` | garbage-collect dead/exited session ghosts |
+| `maxcodex` | open/attach the 4-pane Codex grid |
+| `maxcodex 1` \| `2` \| `3` \| `4` | open/attach an N-pane Codex session |
+| `maxcodex <name>` | open/attach a named Codex workspace |
+| `maxcodex <name> N` | named Codex workspace with N panes |
+| `maxagent codex <name> N` | explicit provider form |
+| `maxagent claude <name> N` | explicit Claude provider form |
+| `maxclaude` | legacy Claude command; keeps `max1`-`max4` session names |
+| `maxagent ls` | list live sessions, numbered, with status flags |
+| `maxagent attach <n\|name>` | attach session #n from `ls`, or by name |
+| `maxagent close <n\|name>` | close session #n from `ls`, or by name |
+| `maxagent close all` | close every session |
+| `maxagent prune` | garbage-collect dead/exited session ghosts |
 
 Inside a session:
 
-- **Detach** (leave it running): `Ctrl-o` then `d`
+- **Detach**: `Ctrl-o` then `d`
 - **Move between panes**: `Alt`+arrow keys
 - **Close the whole window**: `Ctrl-q`
 
-Re-running the same name/number just re-attaches — it's idempotent.
+Re-running the same name/number re-attaches.
 
-## The `--dangerously-skip-permissions` option
+## How It Works
 
-By default Claude Code asks before running tools and commands. The installer can
-instead start every pane with `--dangerously-skip-permissions`, which **skips
-those confirmations entirely** — handy on a throwaway/sandboxed box, riskier on
-a machine you care about, because Claude can run any command without asking.
+- `~/.local/bin/maxagent` owns zellij session management.
+- `~/.local/bin/maxcodex` and `~/.local/bin/maxclaude` are provider wrappers.
+- `~/.config/maxagent/profiles/codex.sh` execs `codex --cd <workdir>`.
+- `~/.config/maxagent/profiles/claude.sh` execs `claude`.
+- `~/.config/maxagent/sessions/*.env` records provider and pane count per
+  zellij session.
+- `~/.local/bin/maxagent-pane` runs inside each pane and dispatches to the
+  session's provider profile.
+- `~/.config/zellij/layouts/agent{1,2,3,4}.kdl` define the neutral layouts.
+- `~/.config/zellij/layouts/cc{1,2,3,4}.kdl` are kept for legacy compatibility.
+- `~/.config/systemd/user/maxagent-named@.service` starts background sessions on
+  systemd hosts. Legacy `maxclaude@.service` files are also installed.
 
-You choose at install time (the prompt defaults to *no*). To change your mind
-later, just re-run `./install.sh` (or `curl … | bash`) and answer differently —
-it only rewrites `~/.local/bin/maxclaude-pane`, the one file that holds the
-working directory and that flag.
-
-## How it works
-
-- `~/.local/bin/maxclaude` — the command (a portable bash script; works in bash
-  or zsh).
-- `~/.config/zellij/layouts/cc{1,2,3,4}.kdl` — the four pane layouts. Each pane
-  runs `~/.local/bin/maxclaude-pane`.
-- `~/.local/bin/maxclaude-pane` — generated by the installer; `cd`s to your
-  working directory and `exec`s `claude` (with or without the skip flag).
-- `~/.config/systemd/user/maxclaude@.service` + `maxclaude-named@.service` —
-  oneshot user services that create the zellij session in the background and are
-  kept alive by systemd linger, so the session outlives your SSH connection.
-  They have **no `[Install]` section** on purpose: sessions never respawn on
-  reboot.
-
-Sessions do **not** survive a full reboot (the Claude processes can't anyway).
-They survive logging out / SSH disconnect.
+Sessions do **not** survive a full reboot. They survive logging out or SSH
+disconnects when systemd linger or zellij background persistence is available.
 
 ## Uninstall
 
 ```bash
-./uninstall.sh                 # stop sessions, remove maxclaude's files
-./uninstall.sh --remove-zellij # also delete ~/.local/bin/zellij
+./uninstall.sh
+./uninstall.sh --remove-zellij
 ```
 
 ## License

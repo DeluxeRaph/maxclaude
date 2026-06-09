@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+DIR="$(cd "$(dirname "$0")" && pwd)"
+export MAXAGENT_DEFAULT_PROVIDER=codex
+export MAXAGENT_APP=maxcodex
+exec "$DIR/maxagent" "$@"

@@ -1,4 +1,4 @@
-// maxagent 1 — single persistent agent pane.
+// maxagent 2 — two persistent agent panes, side by side.
 layout {
     default_tab_template {
         pane size=1 borderless=true {
@@ -9,11 +9,14 @@ layout {
             plugin location="compact-bar"
         }
     }
-    pane_template name="cc" {
+    pane_template name="agent" {
         command "bash"
         args "-lc" "exec $HOME/.local/bin/maxagent-pane"
     }
     tab name="agent" focus=true {
-        cc
+        pane split_direction="vertical" {
+            agent
+            agent
+        }
     }
 }
