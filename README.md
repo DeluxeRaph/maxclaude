@@ -80,6 +80,14 @@ maxagent claude 2 --yolo
 For Codex, this maps to `--dangerously-bypass-approvals-and-sandbox`. For
 Claude, it maps to `--dangerously-skip-permissions`.
 
+`--yolo` applies when the zellij session is created. If you already have a
+running non-yolo session, close it first and reopen it:
+
+```bash
+maxagent close codex4
+maxagent 4 --yolo
+```
+
 ## Requirements
 
 - **Codex CLI** for Codex panes. The installer checks normal `PATH`, a login

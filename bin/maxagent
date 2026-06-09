@@ -123,6 +123,11 @@ _meta_value(){
   awk -F= -v k="$key" '$1 == k {print substr($0, length(k) + 2); exit}' "$file"
 }
 
+_session_exists(){
+  local session="$1"
+  _sessions | grep -qxF "$session"
+}
+
 _unit_for(){
   local session="$1"
   if _has_systemd && command -v systemd-escape >/dev/null 2>&1; then
@@ -222,6 +227,15 @@ _open(){
   session="$(_session_for "$provider" "$sel")" || { echo "invalid session name: $sel" >&2; return 2; }
   case "$sel" in 1|2|3|4) panes="$sel" ;; esac
   layout="agent${panes}"
+  if _session_exists "$session"; then
+    local current_yolo
+    current_yolo="$(_meta_value "$session" MAXAGENT_YOLO 2>/dev/null || echo '')"
+    if [ "$current_yolo" != "$yolo" ]; then
+      echo "$APP: session '$session' already exists with different yolo mode." >&2
+      echo "Close it first, then reopen: $APP close $session && $APP ${sel} $([ -n "$yolo" ] && printf '%s' '--yolo')" >&2
+      return 2
+    fi
+  fi
   _write_session_meta "$session" "$provider" "$panes" "$yolo"
   if _has_systemd; then
     loginctl enable-linger "$USER" >/dev/null 2>&1 || true
