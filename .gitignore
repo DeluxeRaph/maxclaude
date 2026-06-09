@@ -1,0 +1,3 @@
+# nothing to ignore yet — the rendered ~/.local/bin/maxclaude-pane lives outside
+# the repo. Keep this file so the directory layout is obvious.
+*.swp
