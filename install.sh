@@ -234,6 +234,9 @@ cat > "$PROFILE_DIR/codex.sh" <<EOF
 #!/usr/bin/env bash
 $codex_path_line
 cd $workdir_q 2>/dev/null || cd "\$HOME" || true
+if [ -n "\${MAXAGENT_YOLO:-}" ]; then
+  exec $codex_cmd --cd $workdir_q$codex_extra --dangerously-bypass-approvals-and-sandbox "\$@"
+fi
 exec $codex_cmd --cd $workdir_q$codex_extra "\$@"
 EOF
 chmod 0755 "$PROFILE_DIR/codex.sh"
@@ -252,7 +255,12 @@ cat > "$PROFILE_DIR/claude.sh" <<EOF
 #!/usr/bin/env bash
 $claude_env
 cd $workdir_q 2>/dev/null || cd "\$HOME" || true
-exec $claude_cmd$claude_flags "\$@"
+claude_flags="$claude_flags"
+if [ -n "\${MAXAGENT_YOLO:-}" ]; then
+  export IS_SANDBOX=1
+  case " \$claude_flags " in *" --dangerously-skip-permissions "*) ;; *) claude_flags="\$claude_flags --dangerously-skip-permissions" ;; esac
+fi
+exec $claude_cmd \$claude_flags "\$@"
 EOF
 chmod 0755 "$PROFILE_DIR/claude.sh"
 ok "profiles  -> $PROFILE_DIR/{codex,claude}.sh"

@@ -58,7 +58,7 @@ The installer:
 | `--codex-sandbox MODE` | pass `--sandbox MODE` to Codex |
 | `--codex-approval POLICY` | pass `--ask-for-approval POLICY` to Codex |
 | `--codex-dangerous-bypass` | pass Codex's dangerous approval/sandbox bypass flag |
-| `--yolo`, `--skip-permissions` | start Claude with `--dangerously-skip-permissions` |
+| `--yolo`, `--skip-permissions` | configure Claude's default profile with `--dangerously-skip-permissions` |
 | `--safe` | start Claude with normal permission prompts |
 | `--zellij-version vX.Y.Z` | zellij release to fetch when missing |
 | `--no-systemd` | skip systemd units; rely on zellij's own persistence |
@@ -66,6 +66,19 @@ The installer:
 
 Codex defaults are intentionally safe and interactive. The dangerous Codex
 bypass is only used when explicitly requested.
+
+At start time, `--yolo` enables the provider's dangerous mode for that session:
+
+```bash
+maxcodex --yolo 1
+maxcodex --yolo work
+maxagent --yolo codex 2
+maxclaude --yolo
+maxagent --yolo claude 2
+```
+
+For Codex, this maps to `--dangerously-bypass-approvals-and-sandbox`. For
+Claude, it maps to `--dangerously-skip-permissions`.
 
 ## Requirements
 
@@ -87,6 +100,7 @@ maxcodex 1        # 1 pane
 maxcodex 2        # 2 panes
 maxcodex work     # named workspace
 maxcodex oss 2    # named workspace with 2 panes
+maxcodex --yolo 1 # 1 pane with Codex approval/sandbox bypass
 ```
 
 Start Claude:
@@ -94,6 +108,7 @@ Start Claude:
 ```bash
 maxclaude         # legacy Claude command
 maxagent claude 2 # explicit provider form
+maxclaude --yolo  # Claude with --dangerously-skip-permissions
 ```
 
 Manage sessions:

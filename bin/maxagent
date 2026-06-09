@@ -52,6 +52,7 @@ $APP — persistent Codex/Claude panes in zellij
 Usage:
   $APP [codex|claude] [1|2|3|4]
   $APP [codex|claude] <name> [1|2|3|4]
+  $APP --yolo [codex|claude] [name|panes]
   $APP ls
   $APP attach <number|name>
   $APP close <number|name|all>
@@ -103,13 +104,14 @@ _session_for(){
 _session_meta_dir(){ printf '%s/sessions\n' "$CONFIG_ROOT"; }
 
 _write_session_meta(){
-  local session="$1" provider="$2" panes="$3" label
+  local session="$1" provider="$2" panes="$3" yolo="${4:-}" label
   label="$(_provider_label "$provider")"
   mkdir -p "$(_session_meta_dir)" "$LEGACY_CONFIG_ROOT"
   cat > "$(_session_meta_dir)/${session}.env" <<EOF
 MAXAGENT_PROVIDER=$provider
 MAXAGENT_PANES=$panes
 MAXAGENT_LABEL=$label
+MAXAGENT_YOLO=$yolo
 EOF
   if [ "$provider" = "claude" ] && [ "$SESSION_PREFIX" = "legacy" ]; then
     printf '%s\n' "$panes" > "$LEGACY_CONFIG_ROOT/${session}.panes"
@@ -210,7 +212,7 @@ _close(){
 }
 
 _open(){
-  local provider="$1" sel="$2" panes="${3:-4}" session layout
+  local provider="$1" sel="$2" panes="${3:-4}" yolo="${4:-}" session layout
   case "$panes" in 1|2|3|4) ;; *) panes=4 ;; esac
   [ -n "${ZELLIJ:-}" ] && {
     echo "Already inside a zellij session (${ZELLIJ_SESSION_NAME:-?})." >&2
@@ -221,7 +223,7 @@ _open(){
   session="$(_session_for "$provider" "$sel")" || { echo "invalid session name: $sel" >&2; return 2; }
   case "$sel" in 1|2|3|4) panes="$sel" ;; esac
   layout="agent${panes}"
-  _write_session_meta "$session" "$provider" "$panes"
+  _write_session_meta "$session" "$provider" "$panes" "$yolo"
   if _has_systemd; then
     loginctl enable-linger "$USER" >/dev/null 2>&1 || true
     systemctl --user start "$(_unit_for "$session")" >/dev/null 2>&1 \
@@ -233,7 +235,7 @@ _open(){
 }
 
 _list(){
-  local names i=0 nm provider panes tags label
+  local names i=0 nm provider panes yolo tags label
   _prune
   names="$(_sessions)"
   if [ -z "$names" ]; then echo "No maxagent sessions."; return; fi
@@ -243,8 +245,10 @@ _list(){
     i=$((i+1))
     provider="$(_meta_value "$nm" MAXAGENT_PROVIDER 2>/dev/null || echo unknown)"
     panes="$(_meta_value "$nm" MAXAGENT_PANES 2>/dev/null || echo '?')"
+    yolo="$(_meta_value "$nm" MAXAGENT_YOLO 2>/dev/null || echo '')"
     label="$(_provider_label "$provider")"
     tags="${label}, ${panes} panes, running"
+    [ -n "$yolo" ] && tags="$tags, yolo"
     [ "$nm" = "${ZELLIJ_SESSION_NAME:-}" ] && tags="$tags, current"
     printf '  %2d) %-22s [%s]\n' "$i" "$nm" "$tags"
   done <<< "$names"
@@ -266,7 +270,17 @@ _kill_all(){
 }
 
 _main(){
-  local provider="$DEFAULT_PROVIDER" sel="${1:-}" tgt
+  local provider="$DEFAULT_PROVIDER" sel="${1:-}" tgt yolo="" args=()
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --yolo|--dangerous|--skip-permissions) yolo=1 ;;
+      --safe) yolo="" ;;
+      *) args+=("$1") ;;
+    esac
+    shift
+  done
+  set -- "${args[@]}"
+  sel="${1:-}"
   case "$sel" in
     -h|--help|help) _usage; return ;;
     ls|list) _list; return ;;
@@ -298,7 +312,7 @@ _main(){
   else
     sel="${sel:-4}"
   fi
-  _open "$provider" "$sel" "${2:-4}"
+  _open "$provider" "$sel" "${2:-4}" "$yolo"
 }
 
 _main "$@"
