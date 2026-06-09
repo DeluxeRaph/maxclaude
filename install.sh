@@ -235,7 +235,7 @@ cat > "$PROFILE_DIR/codex.sh" <<EOF
 $codex_path_line
 cd $workdir_q 2>/dev/null || cd "\$HOME" || true
 if [ -n "\${MAXAGENT_YOLO:-}" ]; then
-  exec $codex_cmd --cd $workdir_q$codex_extra --dangerously-bypass-approvals-and-sandbox "\$@"
+  exec $codex_cmd --dangerously-bypass-approvals-and-sandbox --cd $workdir_q$codex_extra "\$@"
 fi
 exec $codex_cmd --cd $workdir_q$codex_extra "\$@"
 EOF

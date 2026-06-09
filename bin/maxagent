@@ -118,7 +118,8 @@ EOF
 }
 
 _meta_value(){
-  local session="$1" key="$2" file="$(_session_meta_dir)/${session}.env"
+  local session="$1" key="$2" file
+  file="$(_session_meta_dir)/${session}.env"
   [ -r "$file" ] || return 1
   awk -F= -v k="$key" '$1 == k {print substr($0, length(k) + 2); exit}' "$file"
 }
@@ -155,14 +156,14 @@ _legacy_unit_for(){
 _sessions(){
   "$MAXAGENT_ZELLIJ" list-sessions 2>/dev/null \
     | sed -E 's/\x1b\[[0-9;]*m//g' \
-    | grep -vi 'EXITED' \
+    | { grep -vi 'EXITED' || true; } \
     | awk 'NF && !seen[$1]++{print $1}'
 }
 
 _prune(){
   local live u inst name
-  live="$("$MAXAGENT_ZELLIJ" list-sessions 2>/dev/null | sed -E 's/\x1b\[[0-9;]*m//g' | grep -vi 'EXITED' | awk 'NF{print $1}')"
-  "$MAXAGENT_ZELLIJ" list-sessions 2>/dev/null | sed -E 's/\x1b\[[0-9;]*m//g' | grep -i 'EXITED' \
+  live="$("$MAXAGENT_ZELLIJ" list-sessions 2>/dev/null | sed -E 's/\x1b\[[0-9;]*m//g' | { grep -vi 'EXITED' || true; } | awk 'NF{print $1}')"
+  "$MAXAGENT_ZELLIJ" list-sessions 2>/dev/null | sed -E 's/\x1b\[[0-9;]*m//g' | { grep -i 'EXITED' || true; } \
     | awk 'NF{print $1}' | while read -r name; do "$MAXAGENT_ZELLIJ" delete-session -f "$name" >/dev/null 2>&1; done
   _has_systemd || return 0
   for u in $(systemctl --user list-units 'maxagent-named@*' 'maxclaude@*' 'maxclaude-named@*' --no-legend 2>/dev/null | awk '{print $1}'); do
@@ -254,15 +255,21 @@ _list(){
   if [ -z "$names" ]; then echo "No maxagent sessions."; return; fi
   echo "maxagent sessions:"
   while IFS= read -r nm; do
-    [ -z "$nm" ] && continue
+    if [ -z "$nm" ]; then
+      continue
+    fi
     i=$((i+1))
     provider="$(_meta_value "$nm" MAXAGENT_PROVIDER 2>/dev/null || echo unknown)"
     panes="$(_meta_value "$nm" MAXAGENT_PANES 2>/dev/null || echo '?')"
     yolo="$(_meta_value "$nm" MAXAGENT_YOLO 2>/dev/null || echo '')"
     label="$(_provider_label "$provider")"
     tags="${label}, ${panes} panes, running"
-    [ -n "$yolo" ] && tags="$tags, yolo"
-    [ "$nm" = "${ZELLIJ_SESSION_NAME:-}" ] && tags="$tags, current"
+    if [ -n "$yolo" ]; then
+      tags="$tags, yolo"
+    fi
+    if [ "$nm" = "${ZELLIJ_SESSION_NAME:-}" ]; then
+      tags="$tags, current"
+    fi
     printf '  %2d) %-22s [%s]\n' "$i" "$nm" "$tags"
   done <<< "$names"
   echo
