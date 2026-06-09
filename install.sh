@@ -72,7 +72,7 @@ find_exe(){
     found="$(bash -lc "command -v $name" 2>/dev/null || true)"
   fi
   if [ -z "$found" ] && [ "$name" = "codex" ]; then
-    found="$(find "$HOME/.nvm/versions/node" -maxdepth 4 -type f -name codex -perm -111 2>/dev/null | sort -Vr | head -1 || true)"
+    found="$(find "$HOME/.nvm/versions/node" -maxdepth 4 -name codex -perm -111 2>/dev/null | sort -Vr | head -1 || true)"
   fi
   printf '%s\n' "$found"
 }
