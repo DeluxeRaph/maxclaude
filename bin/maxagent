@@ -95,7 +95,10 @@ _session_for(){
     1|2|3|4) printf '%s%s\n' "$provider" "$sel" ;;
     *)
       safe="$(_sanitize "$sel")" || return 1
-      case "$safe" in "$provider"-*) printf '%s\n' "$safe" ;; *) printf '%s-%s\n' "$provider" "$safe" ;; esac
+      case "$safe" in
+        codex[1-4]|claude[1-4]|max[1-4]|"$provider"-*) printf '%s\n' "$safe" ;;
+        *) printf '%s-%s\n' "$provider" "$safe" ;;
+      esac
       ;;
   esac
 }
@@ -127,6 +130,11 @@ _meta_value(){
 _session_exists(){
   local session="$1"
   _sessions | grep -qxF "$session"
+}
+
+_session_known(){
+  local session="$1"
+  _session_exists "$session" || [ -r "$(_session_meta_dir)/${session}.env" ]
 }
 
 _unit_for(){
@@ -165,6 +173,11 @@ _prune(){
   live="$("$MAXAGENT_ZELLIJ" list-sessions 2>/dev/null | sed -E 's/\x1b\[[0-9;]*m//g' | { grep -vi 'EXITED' || true; } | awk 'NF{print $1}')"
   "$MAXAGENT_ZELLIJ" list-sessions 2>/dev/null | sed -E 's/\x1b\[[0-9;]*m//g' | { grep -i 'EXITED' || true; } \
     | awk 'NF{print $1}' | while read -r name; do "$MAXAGENT_ZELLIJ" delete-session -f "$name" >/dev/null 2>&1; done
+  for meta in "$(_session_meta_dir)"/*.env; do
+    [ -e "$meta" ] || continue
+    name="$(basename "$meta" .env)"
+    grep -qxF "$name" <<<"$live" || rm -f "$meta"
+  done
   _has_systemd || return 0
   for u in $(systemctl --user list-units 'maxagent-named@*' 'maxclaude@*' 'maxclaude-named@*' --no-legend 2>/dev/null | awk '{print $1}'); do
     inst="${u%.service}"
@@ -184,7 +197,7 @@ _resolve_list_index(){
   local tgt="$1" nm candidate
   case "$tgt" in
     ''|*[!0-9]*)
-      if _sessions | grep -qxF "$tgt"; then
+      if _session_known "$tgt"; then
         printf '%s\n' "$tgt"
         return
       fi
