@@ -101,9 +101,51 @@ Inside a session:
 
 - **Detach**: `Ctrl-o` then `d`
 - **Move between panes**: `Alt`+arrow keys
+- **Move without Alt/Option**: `Ctrl-o` then `h`/`j`/`k`/`l`
 - **Close the whole window**: `Ctrl-q`
 
 Re-running the same name/number re-attaches.
+
+## Providers And Models
+
+`maxagent` chooses which CLI to launch. It does not choose the model itself.
+
+```bash
+maxcodex 1          # launches Codex
+maxclaude 1         # launches Claude Code
+maxagent codex 2    # explicit Codex provider
+maxagent claude 2   # explicit Claude provider
+```
+
+Codex model selection comes from Codex itself: your Codex defaults, your Codex
+config, or flags passed through the generated profile. The installer writes the
+Codex profile here:
+
+```bash
+~/.config/maxagent/profiles/codex.sh
+```
+
+For example, add a model flag to the final `exec` line:
+
+```bash
+exec codex --cd "/root/Projects" --model gpt-5.4 "$@"
+```
+
+Or use a Codex config profile:
+
+```bash
+exec codex --cd "/root/Projects" --profile my-profile "$@"
+```
+
+Claude panes work the same way: `maxclaude` launches `claude`, and Claude Code
+uses its own defaults/configuration. To change Claude launch flags, edit:
+
+```bash
+~/.config/maxagent/profiles/claude.sh
+```
+
+Running panes keep the command they started with. Close and reopen a session
+after changing a provider profile.
 
 ## How It Works
 
