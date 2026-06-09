@@ -70,11 +70,11 @@ bypass is only used when explicitly requested.
 At start time, `--yolo` enables the provider's dangerous mode for that session:
 
 ```bash
-maxcodex --yolo 1
-maxcodex --yolo work
-maxagent --yolo codex 2
-maxclaude --yolo
-maxagent --yolo claude 2
+maxagent 4 --yolo
+maxcodex 3 --yolo
+maxcodex work --yolo
+maxclaude 2 --yolo
+maxagent claude 2 --yolo
 ```
 
 For Codex, this maps to `--dangerously-bypass-approvals-and-sandbox`. For
@@ -100,7 +100,7 @@ maxcodex 1        # 1 pane
 maxcodex 2        # 2 panes
 maxcodex work     # named workspace
 maxcodex oss 2    # named workspace with 2 panes
-maxcodex --yolo 1 # 1 pane with Codex approval/sandbox bypass
+maxcodex 3 --yolo # 3 panes with Codex approval/sandbox bypass
 ```
 
 Start Claude:
@@ -108,7 +108,7 @@ Start Claude:
 ```bash
 maxclaude         # legacy Claude command
 maxagent claude 2 # explicit provider form
-maxclaude --yolo  # Claude with --dangerously-skip-permissions
+maxclaude 2 --yolo # Claude with --dangerously-skip-permissions
 ```
 
 Manage sessions:

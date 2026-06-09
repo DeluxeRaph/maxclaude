@@ -50,9 +50,8 @@ _usage(){
 $APP — persistent Codex/Claude panes in zellij
 
 Usage:
-  $APP [codex|claude] [1|2|3|4]
-  $APP [codex|claude] <name> [1|2|3|4]
-  $APP --yolo [codex|claude] [name|panes]
+  $APP [codex|claude] [1|2|3|4] [--yolo]
+  $APP [codex|claude] <name> [1|2|3|4] [--yolo]
   $APP ls
   $APP attach <number|name>
   $APP close <number|name|all>
